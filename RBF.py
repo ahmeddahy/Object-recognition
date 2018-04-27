@@ -66,6 +66,9 @@ class rbf:
         self.train_data_kmean = []
         rows = training_sheet.nrows
         cols = training_sheet.ncols
+        self.avg_list=[]
+        self.mn_list=[]
+        self.mx_list=[]
         for i in range(0, rows):
             sample_features = []
             sample_features_with_class = []
@@ -107,11 +110,19 @@ class rbf:
                 mx = max(mx, self.training_data[i][j])
                 mn = min(mn, self.training_data[i][j])
             avg = avg / num
+            self.avg_list.append(avg)
+            self.mn_list.append(mn)
+            self.mx_list.append(mx)
             for i in range(0, len(self.training_data)):
                 self.train_data_kmean[i][j - 1] = (self.train_data_kmean[i][j - 1] - avg) / (mx - mn)
                 self.training_data[i][j] = (self.training_data[i][j] - avg) / (mx - mn)
             for i in range(0, len(self.testing_data)):
                 self.testing_data[i][j] = (self.testing_data[i][j] - avg) / (mx - mn)
+
+    def normalize_sample(self, sample):
+        for j in range(0, len(sample)):
+            sample[j]=((sample[j]-self.avg_list[j])/(self.mx_list[j]-self.mn_list[j]))
+        return sample
 
     def kmeans(self, training_data, k):
         current_centers = []
@@ -199,7 +210,7 @@ class rbf:
         for i in range(0, self.num_classes):
             output_layer.append(multipky_two_vectors(hidden_layer, self.weights[i]))
         clas = -1
-        mx = -1e9
+        mx = -1e25
         for i in range(0, self.num_classes):
             if (output_layer[i] > mx):
                 mx = output_layer[i]
@@ -229,4 +240,4 @@ class rbf:
             predicted_class = self.classify(features)
             confusion_matrix[np.int(desired_class)][np.int(predicted_class)] += 1
         return confusion_matrix
-        #return np.sum(np.diagonal(confusion_matrix)) / np.sum(confusion_matrix) * 100
+        # return np.sum(np.diagonal(confusion_matrix)) / np.sum(confusion_matrix) * 100

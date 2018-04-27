@@ -147,7 +147,7 @@ class RBF_Window(QtWidgets.QDialog):
         rbf_inputs.mse = float(self.txtbox2.text())
         rbf_inputs.eta = float(self.txtbox3.text())
         rbf_inputs.epochs = int(self.txtbox4.text())
-        file = open_workbook('ObjectRecognition.xls')
+        file = open_workbook('ObjectRecognition2.xls')
         testing_sheet = file.sheet_by_name("Testing")
         training_sheet = file.sheet_by_name("Training")
         x = rbf(rbf_inputs.k, training_sheet, testing_sheet)
@@ -161,7 +161,7 @@ class RBF_Window(QtWidgets.QDialog):
         rbf_inputs.mse = float(self.txtbox2.text())
         rbf_inputs.eta = float(self.txtbox3.text())
         rbf_inputs.epochs = int(self.txtbox4.text())
-        file = open_workbook('ObjectRecognition.xls')
+        file = open_workbook('ObjectRecognition2.xls')
         testing_sheet = file.sheet_by_name("Testing")
         training_sheet = file.sheet_by_name("Training")
         x = rbf(rbf_inputs.k, training_sheet, testing_sheet)
@@ -241,30 +241,31 @@ class Classify_window(QtWidgets.QDialog):
         rbf_inputs.mse = .001
         rbf_inputs.eta = .9
         rbf_inputs.epochs = 16
-        file = open_workbook('ObjectRecognition.xls')
-        print(1)
+        file = open_workbook('ObjectRecognition2.xls')
         training_sheet = file.sheet_by_name("Training")
         testing_sheet = file.sheet_by_name("Testing")
-        print(3)
         x = rbf(rbf_inputs.k, training_sheet, testing_sheet)
         x.initial_values(rbf_inputs.mse, rbf_inputs.eta, rbf_inputs.epochs)
         x.train()
-        print(2)
         original_image = cv2.imread(self.original_path)
-        output_image=original_image
+        output_image = cv2.imread(self.original_path)
         getimages = Segmentation()
-        Coordinates_images = Segmentation.Segment(self.segmented_path)
+        Coordinates_images = getimages.Segment(self.segmented_path)
+
         for coordinate in Coordinates_images:
             crop_img = original_image[coordinate.y:coordinate.y + coordinate.h,
                        coordinate.x:coordinate.x + coordinate.w]
-            image = cv2.imread(crop_img)
             image = cv2.resize(crop_img, (50, 50))
-            gray = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
-            gray = np.reshape(crop_img, 2500)
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            gray = np.reshape(gray, 2500)
             feautures = pca.TestingOne(gray)
+            feautures = x.normalize_sample(feautures)
             type = x.classify(feautures)
-            output_image=add_rectangle(output_image,coordinate.x,coordinate.y,coordinate.x+coordinate.w,coordinate.y+coordinate.h,type)
-        cv2.imshow('IMAGE',output_image)
+            output_image = add_rectangle(output_image, coordinate.x, coordinate.y, coordinate.x + coordinate.w,
+                                         coordinate.y + coordinate.h, type)
+        cv2.imshow('IMAGE', output_image)
+        cv2.waitKey(400000)
+
 
 def type(k):
     if k == 0:
@@ -279,11 +280,14 @@ def type(k):
         return 'Helicopter'
 
 
-def add_rectangle(img,minx,miny,maxx,maxy,k):
-    a=img
-    cv2.rectangle(a, (minx, miny), (maxx, maxy), (0, 255, 0), 2)  # (startX , startY) (endX , endY) (R,G,B) (rectangle thickness)
+def add_rectangle(img, minx, miny, maxx, maxy, k):
+    a = img
+    cv2.rectangle(a, (minx, miny), (maxx, maxy), (0, 255, 0),
+                  2)  # (startX , startY) (endX , endY) (R,G,B) (rectangle thickness)
     font = cv2.FONT_HERSHEY_PLAIN
-#    text posX,posY,  , size, color,thick, lineType
-    cv2.putText(a, type(k), (minx, miny), font, 2, (0, 0, 255), 2, cv2.LINE_AA)
+    #    text posX,posY,  , size, color,thick, lineType
+    cv2.putText(a, type(k), (minx, miny + 20), font, 2, (0, 0, 255), 2, cv2.LINE_AA)
     return a
+
+
 start_window()
