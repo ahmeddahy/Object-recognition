@@ -3,6 +3,7 @@ import glob
 import cv2
 import random
 import xlwt
+import matplotlib.pyplot as plt
 
 
 class PCA:
@@ -15,7 +16,10 @@ class PCA:
     def ReadImages(self, operation):
         self.Images = []
         for Class in range(0, self.NumberOfClasses, 1):
-            path = operation + "/" + str(Class + 1) + "/*.jpg"
+            if(operation=="Training"):
+             path = operation + "/" + str(Class + 1) + "/*.jpg"
+            else:
+             path = operation + "/" + str(Class + 1) + "/*.bmp"
             for Image in glob.glob(path):
                 image = cv2.imread(Image)
                 image = cv2.resize(image, (50, 50))
@@ -107,6 +111,7 @@ class PCA:
         out = [[] for j in range(0, len(orderedVectors), 1)]
         j = 0
         y = []
+        x=[]
         while (j < len(CumProb)):
             if (CumProb[j] > 0.97):
                 break
@@ -114,6 +119,11 @@ class PCA:
                 out[i].append(orderedVectors[i][j])
             y.append(CumProb[j])
             j = j + 1
+            x.append(j)
+        plt.plot(x,y)
+        plt.xlabel("PCs")
+        plt.ylabel("CumSum")
+        plt.show()
         return out
 
     def Testing(self):
@@ -121,7 +131,6 @@ class PCA:
         for image in self.Images:
             TestingFeatures.append(self.TestingOne(image[1]))
         sheet = self.wbk.add_sheet('Testing')
-        print(len(TestingFeatures), "-------")
         TestingFeatures = np.array(TestingFeatures).tolist()
         for i in range(0, len(TestingFeatures), 1):
             sheet.write(i, 0, self.Images[i][0])
@@ -136,6 +145,9 @@ class PCA:
         FinalData = FinalData.T
         return FinalData
 
+    def SetData(self,EigenVectors,ImagesMean):
+        self.finalEigenVectors=EigenVectors.copy()
+        self.totalimages=ImagesMean.copy()
 
 class Node:
     def __init__(self, input):
