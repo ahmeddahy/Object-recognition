@@ -649,8 +649,8 @@ class MLP:
 
 
 # multi = MLP(Activation.SIGMOID, True, StoppingCriterion.MSE, eta=0.05, mse_threshold=0.05)
-multi = MLP()
-multi.read_excel('ObjectRecognition.xls')
+'''multi = MLP()
+multi.read_excel('ObjectRecognition2.xls')
 multi.read_xml("MLP.xml")
 s = multi.determine_class(np.array([-1042.706097, -1695.761646, 242.0806125, 396.9620878, 1088.126413
                                     , -46.8562763, 597.2557591, -570.8149451, -105.2313088, 93.56346076
@@ -662,4 +662,4 @@ acc, conf = multi.test()
 # multi.write_xml()
 print(acc)
 print(conf)
-print(s)
+print(s)'''

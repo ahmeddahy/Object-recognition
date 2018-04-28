@@ -61,6 +61,31 @@ def get_average(vec):
     return res
 
 
+def classify_from_file(sample,k,num_classes,avg_list,mx_list,mn_list,centers,weights):
+
+    for j in range(0, len(sample)):
+        sample[j] = ((sample[j] - avg_list[j]) / (mx_list[j] - mn_list[j]))
+    maxdistance = 0
+    for i in centers:
+        for j in centers:
+            maxdistance = max(euclidean_distance(i, j), maxdistance)
+    spread = maxdistance / math.sqrt(2 * k)
+    hidden_layer = []
+    for j in range(0, k):
+        dist_x_c = euclidean_distance(sample, centers[j])
+        hidden_layer.append(math.exp((-1 * dist_x_c * dist_x_c) / (2 * spread * spread)))
+    output_layer = []
+    for i in range(0, num_classes):
+        output_layer.append(multipky_two_vectors(hidden_layer, weights[i]))
+    clas = -1
+    mx = -1e25
+    for i in range(0, num_classes):
+        if (output_layer[i] > mx):
+            mx = output_layer[i]
+            clas = i
+    return clas
+
+
 class rbf:
     def __init__(self, ck, training_sheet, testing_sheet):
         self.k = ck
