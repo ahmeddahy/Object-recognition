@@ -4,7 +4,7 @@ import cv2
 import random
 import xlwt
 import matplotlib.pyplot as plt
-
+import math
 
 class PCA:
     def __init__(self, NumberOfClasses):
@@ -111,18 +111,16 @@ class PCA:
         out = [[] for j in range(0, len(orderedVectors), 1)]
         j = 0
         y = []
-        x=[]
+        x=[i+1 for i in range(len(CumProb))]
         while (j < len(CumProb)):
             if (CumProb[j] > 0.97):
                 break
             for i in range(0, len(orderedVectors), 1):
                 out[i].append(orderedVectors[i][j])
-            y.append(CumProb[j])
             j = j + 1
-            x.append(j)
-        plt.plot(x,y)
+        plt.plot(x,CumProb)
         plt.xlabel("PCs")
-        plt.ylabel("CumSum")
+        plt.ylabel("CumProb")
         plt.show()
         return out
 
@@ -159,40 +157,54 @@ class GeneralHebbianAlgorithm:
     def __init__(self):
         self.OldWeight = [[random.random() for i in range(2500)] for j in range(20)]
         self.weights = [[0 for i in range(2500)] for j in range(20)]
-
+        self.weightperepoch=[[0 for i in range(2500)] for j in range(20)]
     def calculate(self, i, j, PCs):
         sum = 0.0
         for k in range(i + 1):
             sum = sum + self.OldWeight[k][j] * PCs[k]
-            print(sum)
-        print("--------------")
+           # print(sum)
+       # print("--------------")
         return sum
-
     def Stopping(self):
         for i in range(len(self.OldWeight)):
             for j in range(len(self.OldWeight[0])):
-                if (self.weights[i][j] != self.OldWeight[i][j]):
+                if ((self.weightperepoch[i][j]-self.weights[i][j])!=0):
                     return False
         return True
-
+    def Normalize(self,weights):
+        for i in range(len(weights)):
+            avg=0
+            mx=0
+            mn=1e9
+            for j in range(len(weights[0])):
+                avg=avg+weights[i][j]
+                if(weights[i][j]>mx):
+                    mx=weights[i][j]
+                if(weights[i][j]<mn):
+                    mn=weights[i][j]
+            avg=avg/len(weights[0])
+            for j in range(len(weights[0])):
+                weights[i][j]=(weights[i][j]-avg)/(mx-mn)
+        return weights
     def Network(self, network, learningrate):
+        self.OldWeight=self.Normalize(self.OldWeight)
         epoch = 100
         while (epoch > 0):
+            print(epoch)
             for n in range(0, len(network), 1):
-                #  total = network[n].output[0] *self.weight[0][0]
                 for i in range(0, len(network[0].output), 1):
+                    network[n].output[i]=0
                     for j in range(0, len(network[0].input), 1):
-                        network[n].output[i] = network[n].output[i] + (
-                                    self.OldWeight[i][j] * network[n].input[j])  # calc output
-                        # if(j!=0):
-                        # total=total+network[n].weight[i-1][j]
-                        self.weights[i][j] = ((network[n].output[i] * network[n].input[j]) - (
-                                    network[n].output[i] * self.calculate(i, j, network[n].output))) * learningrate
-
-                self.OldWeight = self.weights.copy()
-            # if(self.Stopping()):
-            #   break
-            # print(self.OldWeight)
-            epoch = epoch - 1
-        # print(epoch)
-        return network
+                        network[n].output[i] =( network[n].output[i] +  self.OldWeight[i][j] * network[n].input[j]) #%255 # calc output
+                    for j in range(0,len(network[0].input),1):
+                        self.weights[i][j]=network[n].output[i] * network[n].input[j]-network[n].output[i]*self.weights[i][j]
+                        if(i!=0):
+                         self.weights[i][j]=self.weights[i][j]-(network[n].output[i] * self.weights[i-1][j])
+                        self.weights[i][j]=self.weights[i][j]*learningrate
+                self.OldWeight=self.Normalize(self.weights).copy()
+            if(self.Stopping()):
+               break
+            self.weightperepoch=self.weights.copy()
+            #print(self.weightperepoch)
+            epoch = epoch -1
+        return self.OldWeight
