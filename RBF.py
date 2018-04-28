@@ -1,6 +1,9 @@
 from random import *
 import math
 import numpy as np
+from xlwt import Workbook
+import xlsxwriter
+from xlrd import open_workbook
 
 
 def euclidean_distance(point1, point2):
@@ -58,6 +61,31 @@ def get_average(vec):
     return res
 
 
+def classify_from_file(sample,k,num_classes,avg_list,mx_list,mn_list,centers,weights):
+
+    for j in range(0, len(sample)):
+        sample[j] = ((sample[j] - avg_list[j]) / (mx_list[j] - mn_list[j]))
+    maxdistance = 0
+    for i in centers:
+        for j in centers:
+            maxdistance = max(euclidean_distance(i, j), maxdistance)
+    spread = maxdistance / math.sqrt(2 * k)
+    hidden_layer = []
+    for j in range(0, k):
+        dist_x_c = euclidean_distance(sample, centers[j])
+        hidden_layer.append(math.exp((-1 * dist_x_c * dist_x_c) / (2 * spread * spread)))
+    output_layer = []
+    for i in range(0, num_classes):
+        output_layer.append(multipky_two_vectors(hidden_layer, weights[i]))
+    clas = -1
+    mx = -1e25
+    for i in range(0, num_classes):
+        if (output_layer[i] > mx):
+            mx = output_layer[i]
+            clas = i
+    return clas
+
+
 class rbf:
     def __init__(self, ck, training_sheet, testing_sheet):
         self.k = ck
@@ -66,9 +94,9 @@ class rbf:
         self.train_data_kmean = []
         rows = training_sheet.nrows
         cols = training_sheet.ncols
-        self.avg_list=[]
-        self.mn_list=[]
-        self.mx_list=[]
+        self.avg_list = []
+        self.mn_list = []
+        self.mx_list = []
         for i in range(0, rows):
             sample_features = []
             sample_features_with_class = []
@@ -121,7 +149,7 @@ class rbf:
 
     def normalize_sample(self, sample):
         for j in range(0, len(sample)):
-            sample[j]=((sample[j]-self.avg_list[j])/(self.mx_list[j]-self.mn_list[j]))
+            sample[j] = ((sample[j] - self.avg_list[j]) / (self.mx_list[j] - self.mn_list[j]))
         return sample
 
     def kmeans(self, training_data, k):
@@ -190,11 +218,33 @@ class rbf:
             for x in self.training_data:
                 features = x[1:len(x)]
                 out = self.mse_sample(features)
+                clas = x[0]
+                output_layer = []
+                for j in range(0, self.num_classes):
+                    output_layer.append(0)
+                output_layer[np.int(clas - 1)] = 1
                 for m in range(0, self.num_classes):
                     self.mse_classes[m] += (output_layer[m] - out[m])
+            for m in range(0, self.num_classes):
+                self.mse_classes[m] /= len(self.training_data)
             mse = .5 * get_average(self.mse_classes)
             if (mse < self.mse_th):
                 break
+
+    def mse_sample(self, sample):
+        maxdistance = 0
+        for i in self.centers:
+            for j in self.centers:
+                maxdistance = max(euclidean_distance(i, j), maxdistance)
+        spread = maxdistance / math.sqrt(2 * self.k)
+        hidden_layer = []
+        for j in range(0, self.k):
+            dist_x_c = euclidean_distance(sample, self.centers[j])
+            hidden_layer.append(math.exp((-1 * dist_x_c * dist_x_c) / (2 * spread * spread)))
+        output_layer = []
+        for i in range(0, self.num_classes):
+            output_layer.append(multipky_two_vectors(hidden_layer, self.weights[i]))
+        return output_layer
 
     def classify(self, sample):
         maxdistance = 0
@@ -216,21 +266,6 @@ class rbf:
                 mx = output_layer[i]
                 clas = i
         return clas
-
-    def mse_sample(self, sample):
-        maxdistance = 0
-        for i in self.centers:
-            for j in self.centers:
-                maxdistance = max(euclidean_distance(i, j), maxdistance)
-        spread = maxdistance / math.sqrt(2 * self.k)
-        hidden_layer = []
-        for j in range(0, self.k):
-            dist_x_c = euclidean_distance(sample, self.centers[j])
-            hidden_layer.append(math.exp((-1 * dist_x_c * dist_x_c) / (2 * spread * spread)))
-        output_layer = []
-        for i in range(0, self.num_classes):
-            output_layer.append(multipky_two_vectors(hidden_layer, self.weights[i]))
-        return output_layer
 
     def test(self):
         confusion_matrix = np.zeros((5, 5))

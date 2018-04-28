@@ -6,6 +6,7 @@ from xlrd import open_workbook
 from RBF import *
 from Segmentation import *
 from FeatureExtraction import *
+from MLP import *
 
 
 class RBF_inputs():
@@ -35,40 +36,90 @@ def start_window():
     RBF_button.move(50, 240)
     window.show()
     generate_features_button.clicked.connect(PCA_Window)
+    MLP_button.clicked.connect(MLP_Window)
     RBF_button.clicked.connect(RBF_Window)
     app.exec()
 
 
-def PCA_Window():
-    window = QtWidgets.QDialog()
-    PCA_Button = QtWidgets.QPushButton(window)
-    GHA_Button = QtWidgets.QPushButton(window)
-    window.setWindowTitle('PCA Features')
-    window.setGeometry(600, 100, 300, 260)
-    PCA_Button.setText('Generate PCA Features')
-    PCA_Button.resize(200, 100)
-    PCA_Button.move(50, 20)
-    GHA_Button.setText('Generate PCA(GHA) Features')
-    GHA_Button.resize(200, 100)
-    GHA_Button.move(50, 130)
-    window.show()
-    window.exec()
+class PCA_Window(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.title = 'Generate Features'
+        self.left = 600
+        self.top = 100
+        self.width = 300
+        self.height = 260
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.setGeometry(600, 100, 300, 260)
+        PCA_Button = QtWidgets.QPushButton(self)
+        GHA_Button = QtWidgets.QPushButton(self)
+        PCA_Button.setText('Generate PCA Features')
+        PCA_Button.resize(200, 100)
+        PCA_Button.move(50, 20)
+        PCA_Button.clicked.connect(self.Do_graph)
+        GHA_Button.setText('Generate PCA(GHA) Features')
+        GHA_Button.resize(200, 100)
+        GHA_Button.move(50, 130)
+        self.show()
+        self.exec()
+
+    def Do_graph(self):
+        pca = PCA(5)
+        pca.ReadImages('Training')
+        mean = pca.ImagesMean()
+        pca.Training(mean)
+        pca.ReadImages('Testing')
+        pca.Testing()
 
 
-def MLP_Window():
-    window = QtWidgets.QDialog()
-    PCA_Button = QtWidgets.QPushButton(window)
-    GHA_Button = QtWidgets.QPushButton(window)
-    window.setWindowTitle('PCA Features')
-    window.setGeometry(500, 100, 500, 360)
-    PCA_Button.setText('Generate PCA Features')
-    PCA_Button.resize(400, 100)
-    PCA_Button.move(50, 20)
-    GHA_Button.setText('Generate PCA(GHA) Features')
-    GHA_Button.resize(400, 100)
-    GHA_Button.move(50, 130)
-    window.show()
-    window.exec()
+class MLP_Window(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.title = 'MLP Classifier'
+        self.left = 500
+        self.top = 200
+        self.width = 500
+        self.height = 230
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        button2 = QtWidgets.QPushButton(self)
+        button2.setText('Test With Best')
+        button2.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
+        button2.resize(200, 100)
+        button2.move(280, 70)
+        button2.clicked.connect(self.test)
+        button3 = QtWidgets.QPushButton(self)
+        button3.setText('Classify')
+        button3.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
+        button3.resize(200, 100)
+        button3.move(30, 70)
+        button3.clicked.connect(Classify_window_mlp)
+        self.show()
+        self.exec()
+
+    def test(self):
+        multi=MLP()
+        multi.read_excel('ObjectRecognition2.xls')
+        multi.read_xml("MLP.xml")
+        acc, conf = multi.test()
+        print(acc)
+        print(conf)
+        self.do_message()
+
+    def do_message(self):
+        Mbox = QtWidgets.QMessageBox(self)
+        Mbox.setText("DONE")
+        Mbox.resize(400, 300)
+        Mbox.move(700, 300)
+        Mbox.show()
+        Mbox.exec()
 
 
 class RBF_Window(QtWidgets.QDialog):
@@ -121,7 +172,7 @@ class RBF_Window(QtWidgets.QDialog):
         rbf_inputs.eta = float(txtbox3.text())
         rbf_inputs.epochs = int(txtbox4.text())'''
         button1 = QtWidgets.QPushButton(self)
-        button1.setText('Train to get weigths')
+        button1.setText('Train to get weights')
         button1.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
         button1.resize(250, 150)
         button1.move(20, 300)
@@ -137,7 +188,7 @@ class RBF_Window(QtWidgets.QDialog):
         button3.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
         button3.resize(250, 150)
         button3.move(276, 480)
-        button3.clicked.connect(Classify_window)
+        button3.clicked.connect(Classify_window_rbf)
         self.show()
         self.exec()
 
@@ -154,6 +205,7 @@ class RBF_Window(QtWidgets.QDialog):
         x.initial_values(rbf_inputs.mse, rbf_inputs.eta, rbf_inputs.epochs)
         x.train()
         print(x.weights)
+        self.do_message()
 
     def test(self):
         rbf_inputs = RBF_inputs()
@@ -169,9 +221,18 @@ class RBF_Window(QtWidgets.QDialog):
         x.train()
         a = x.test()
         print(a)
+        self.do_message()
+
+    def do_message(self):
+        Mbox = QtWidgets.QMessageBox(self)
+        Mbox.setText("DONE")
+        Mbox.resize(400, 300)
+        Mbox.move(700, 300)
+        Mbox.show()
+        Mbox.exec()
 
 
-class Classify_window(QtWidgets.QDialog):
+class Classify_window_rbf(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
         self.title = 'Classify'
@@ -236,22 +297,11 @@ class Classify_window(QtWidgets.QDialog):
         pca.ReadImages('Training')
         mean = pca.ImagesMean()
         pca.Training(mean)
-        rbf_inputs = RBF_inputs()
-        rbf_inputs.k = 11
-        rbf_inputs.mse = .001
-        rbf_inputs.eta = .9
-        rbf_inputs.epochs = 16
-        file = open_workbook('ObjectRecognition2.xls')
-        training_sheet = file.sheet_by_name("Training")
-        testing_sheet = file.sheet_by_name("Testing")
-        x = rbf(rbf_inputs.k, training_sheet, testing_sheet)
-        x.initial_values(rbf_inputs.mse, rbf_inputs.eta, rbf_inputs.epochs)
-        x.train()
         original_image = cv2.imread(self.original_path)
         output_image = cv2.imread(self.original_path)
         getimages = Segmentation()
         Coordinates_images = getimages.Segment(self.segmented_path)
-
+        r = read_rbf_data()
         for coordinate in Coordinates_images:
             crop_img = original_image[coordinate.y:coordinate.y + coordinate.h,
                        coordinate.x:coordinate.x + coordinate.w]
@@ -259,12 +309,151 @@ class Classify_window(QtWidgets.QDialog):
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             gray = np.reshape(gray, 2500)
             feautures = pca.TestingOne(gray)
-            feautures = x.normalize_sample(feautures)
-            type = x.classify(feautures)
+            type = classify_from_file(feautures, r.k, r.num_classes, r.avg_list, r.mx_list, r.mn_list, r.centers,
+                                      r.weights)
             output_image = add_rectangle(output_image, coordinate.x, coordinate.y, coordinate.x + coordinate.w,
                                          coordinate.y + coordinate.h, type)
         cv2.imshow('IMAGE', output_image)
         cv2.waitKey(400000)
+
+
+class Classify_window_mlp(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.title = 'Classify'
+        self.left = 450
+        self.top = 50
+        self.width = 600
+        self.height = 500
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.label1 = QtWidgets.QLabel(self)
+        self.label1.setPixmap(QtGui.QPixmap('white.jpg'))
+        self.label1.resize(275, 250)
+        self.label1.move(20, 20)
+        self.label2 = QtWidgets.QLabel(self)
+        self.label2.setPixmap(QtGui.QPixmap('white.jpg'))
+        self.label2.resize(275, 250)
+        self.label2.move(310, 20)
+        button1 = QtWidgets.QPushButton(self)
+        button1.setText('Load original image')
+        button1.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
+        button1.resize(200, 50)
+        button1.move(50, 300)
+        button1.clicked.connect(self.Browse_label1)
+        button2 = QtWidgets.QPushButton(self)
+        button2.setText('Load segmented image')
+        button2.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
+        button2.resize(200, 50)
+        button2.move(350, 300)
+        button2.clicked.connect(self.Browse_label2)
+        button3 = QtWidgets.QPushButton(self)
+        button3.setText('Recognize')
+        button3.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
+        button3.resize(150, 100)
+        button3.move(230, 400)
+        button3.clicked.connect(self.Recognize)
+        self.show()
+        self.exec()
+
+    def Browse_label1(self):
+        window = QtWidgets.QDialog()
+        self.original_path, _ = QtWidgets.QFileDialog.getOpenFileName(window, 'Single File', QtCore.QDir.rootPath(),
+                                                                      '*')
+        if len(self.original_path) > 0:
+            self.label1.setPixmap(QtGui.QPixmap(self.original_path))
+            self.label1.resize(275, 250)
+            self.label1.move(20, 20)
+
+    def Browse_label2(self):
+        window = QtWidgets.QDialog()
+        self.segmented_path, _ = QtWidgets.QFileDialog.getOpenFileName(window, 'Single File', QtCore.QDir.rootPath(),
+                                                                       '*')
+        if len(self.segmented_path) > 0:
+            self.label2.setPixmap(QtGui.QPixmap(self.segmented_path))
+            self.label2.resize(275, 250)
+            self.label2.move(310, 20)
+
+    def Recognize(self):
+        pca = PCA(5)
+        pca.ReadImages('Training')
+        mean = pca.ImagesMean()
+        pca.Training(mean)
+        multi = MLP()
+        multi.read_xml("MLP.xml")
+        original_image = cv2.imread(self.original_path)
+        output_image = cv2.imread(self.original_path)
+        getimages = Segmentation()
+        Coordinates_images = getimages.Segment(self.segmented_path)
+        for coordinate in Coordinates_images:
+            crop_img = original_image[coordinate.y:coordinate.y + coordinate.h,
+                       coordinate.x:coordinate.x + coordinate.w]
+            image = cv2.resize(crop_img, (50, 50))
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            gray = np.reshape(gray, 2500)
+            feautures = pca.TestingOne(gray)
+            type = multi.determine_class(np.asarray(feautures)) - 1
+            output_image = add_rectangle(output_image, coordinate.x, coordinate.y, coordinate.x + coordinate.w,
+                                         coordinate.y + coordinate.h, type)
+        cv2.imshow('IMAGE', output_image)
+        cv2.waitKey(400000)
+
+
+class read_rbf_data():
+    def __init__(self):
+        self.k = 13
+        self.num_classes = 5
+        self.avg_list = []
+        self.mx_list = []
+        self.mn_list = []
+        self.centers = []
+        self.weights = []
+        center = []
+        weight = []
+        file = open("DataforRBF.txt", "r")
+        text = file.read()
+        i = 0
+        j = 0
+        tmp = ""
+        while (i < len(text)):
+            if text[i] != ' ' and text[i] != '\n':
+                tmp += text[i]
+            if (text[i] == '\n'):
+                if j >= 3 and j <= 15:
+                    print(j)
+                    print(center)
+                    print(len(center))
+                    self.centers.append(center)
+                    center = []
+                if j >= 16 and j <= 20:
+                    self.weights.append(weight)
+                    weight = []
+                j += 1
+
+            elif j == 0 and text[i] == ' ':
+                if tmp != ' ':
+                    self.avg_list.append(float(tmp))
+                tmp = ""
+            elif j == 1 and text[i] == ' ':
+                if tmp != ' ':
+                    self.mx_list.append(float(tmp))
+                tmp = ""
+            elif j == 2 and text[i] == ' ':
+                if tmp != ' ':
+                    self.mn_list.append(float(tmp))
+                tmp = ""
+            elif j >= 3 and j <= 15 and text[i] == ' ':
+                if tmp != ' ':
+                    center.append(float(tmp))
+                tmp = ""
+            elif j >= 16 and j <= 20 and text[i] == ' ':
+                if tmp != ' ':
+                    weight.append(float(tmp))
+                tmp = ""
+            i += 1
 
 
 def type(k):
