@@ -3,6 +3,21 @@ import xlsxwriter
 from xlrd import open_workbook
 from RBF import *
 import xlwt
+file = open_workbook('ObjectRecognition.xls')
+testing_sheet = file.sheet_by_name("Testing")
+training_sheet = file.sheet_by_name("Training")
+mx=0
+x = rbf(18, training_sheet, testing_sheet)
+for i in range(1,10):
+    x.initial_values(.001, i*.1, 300)
+    x.train()
+    a=x.test()
+    acc=np.sum(np.diagonal(a)) / np.sum(a) * 100
+    if(acc>mx):
+        mx=acc
+        print(mx)
+        print(i*.1)
+        print(a)
 '''
 file = open_workbook('ObjectRecognition.xls')
 testing_sheet = file.sheet_by_name("Testing")
