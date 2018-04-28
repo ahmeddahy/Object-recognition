@@ -35,40 +35,137 @@ def start_window():
     RBF_button.move(50, 240)
     window.show()
     generate_features_button.clicked.connect(PCA_Window)
+    MLP_button.clicked.connect(MLP_Window)
     RBF_button.clicked.connect(RBF_Window)
     app.exec()
 
 
-def PCA_Window():
-    window = QtWidgets.QDialog()
-    PCA_Button = QtWidgets.QPushButton(window)
-    GHA_Button = QtWidgets.QPushButton(window)
-    window.setWindowTitle('PCA Features')
-    window.setGeometry(600, 100, 300, 260)
-    PCA_Button.setText('Generate PCA Features')
-    PCA_Button.resize(200, 100)
-    PCA_Button.move(50, 20)
-    GHA_Button.setText('Generate PCA(GHA) Features')
-    GHA_Button.resize(200, 100)
-    GHA_Button.move(50, 130)
-    window.show()
-    window.exec()
+class PCA_Window(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.title = 'Generate Features'
+        self.left = 600
+        self.top = 100
+        self.width = 300
+        self.height = 260
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.setGeometry(600, 100, 300, 260)
+        PCA_Button = QtWidgets.QPushButton(self)
+        GHA_Button = QtWidgets.QPushButton(self)
+        PCA_Button.setText('Generate PCA Features')
+        PCA_Button.resize(200, 100)
+        PCA_Button.move(50, 20)
+        PCA_Button.clicked.connect(self.Do_graph)
+        GHA_Button.setText('Generate PCA(GHA) Features')
+        GHA_Button.resize(200, 100)
+        GHA_Button.move(50, 130)
+        self.show()
+        self.exec()
+
+    def Do_graph(self):
+        pca = PCA(5)
+        pca.ReadImages('Training')
+        mean = pca.ImagesMean()
+        pca.Training(mean)
+        pca.ReadImages('Testing')
+        pca.Testing()
 
 
-def MLP_Window():
-    window = QtWidgets.QDialog()
-    PCA_Button = QtWidgets.QPushButton(window)
-    GHA_Button = QtWidgets.QPushButton(window)
-    window.setWindowTitle('PCA Features')
-    window.setGeometry(500, 100, 500, 360)
-    PCA_Button.setText('Generate PCA Features')
-    PCA_Button.resize(400, 100)
-    PCA_Button.move(50, 20)
-    GHA_Button.setText('Generate PCA(GHA) Features')
-    GHA_Button.resize(400, 100)
-    GHA_Button.move(50, 130)
-    window.show()
-    window.exec()
+class MLP_Window(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.title = 'MLP Classifier'
+        self.left = 350
+        self.top = 50
+        self.width = 800
+        self.height = 660
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        label1 = QtWidgets.QLabel(self)
+        label1.setText('Number of hidden layers')
+        label1.setFont(QtGui.QFont("Times", 20, QtGui.QFont.Bold))
+        label1.move(20, 50)
+        label2 = QtWidgets.QLabel(self)
+        label2.setText('MSE threshold')
+        label2.setFont(QtGui.QFont("Times", 20, QtGui.QFont.Bold))
+        label2.move(20, 110)
+        label3 = QtWidgets.QLabel(self)
+        label3.setText('Learning rate')
+        label3.setFont(QtGui.QFont("Times", 20, QtGui.QFont.Bold))
+        label3.move(20, 170)
+        label4 = QtWidgets.QLabel(self)
+        label4.setText('Number of epochs')
+        label4.setFont(QtGui.QFont("Times", 20, QtGui.QFont.Bold))
+        label4.move(20, 230)
+        self.txtbox1 = QtWidgets.QLineEdit(self)
+        self.txtbox1.setFont(QtGui.QFont("Times", 15, QtGui.QFont.Bold))
+        self.txtbox1.resize(300, 50)
+        self.txtbox1.move(490, 40)
+        self.txtbox2 = QtWidgets.QLineEdit(self)
+        self.txtbox2.setFont(QtGui.QFont("Times", 15, QtGui.QFont.Bold))
+        self.txtbox2.resize(300, 50)
+        self.txtbox2.move(490, 100)
+        self.txtbox3 = QtWidgets.QLineEdit(self)
+        self.txtbox3.setFont(QtGui.QFont("Times", 15, QtGui.QFont.Bold))
+        self.txtbox3.resize(300, 50)
+        self.txtbox3.move(490, 160)
+        self.txtbox4 = QtWidgets.QLineEdit(self)
+        self.txtbox4.setFont(QtGui.QFont("Times", 15, QtGui.QFont.Bold))
+        self.txtbox4.resize(300, 50)
+        self.txtbox4.move(490, 220)
+        button1 = QtWidgets.QPushButton(self)
+        button1.setText('Train to get weigths')
+        button1.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
+        button1.resize(250, 150)
+        button1.move(20, 300)
+        button1.clicked.connect(self.train)
+        button2 = QtWidgets.QPushButton(self)
+        button2.setText('Test to get confusion matrix')
+        button2.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
+        button2.resize(250, 150)
+        button2.move(530, 300)
+        button2.clicked.connect(self.test)
+        button3 = QtWidgets.QPushButton(self)
+        button3.setText('Classify')
+        button3.setFont(QtGui.QFont("Times", 13, QtGui.QFont.Bold))
+        button3.resize(250, 150)
+        button3.move(276, 480)
+        button3.clicked.connect(Classify_window)
+        self.show()
+        self.exec()
+
+    def train(self):
+        rbf_inputs = RBF_inputs()
+        rbf_inputs.k = int(self.txtbox1.text())
+        rbf_inputs.mse = float(self.txtbox2.text())
+        rbf_inputs.eta = float(self.txtbox3.text())
+        rbf_inputs.epochs = int(self.txtbox4.text())
+        file = open_workbook('ObjectRecognition2.xls')
+        testing_sheet = file.sheet_by_name("Testing")
+        training_sheet = file.sheet_by_name("Training")
+        x = rbf(rbf_inputs.k, training_sheet, testing_sheet)
+        x.initial_values(rbf_inputs.mse, rbf_inputs.eta, rbf_inputs.epochs)
+        x.train()
+        print(x.weights)
+        self.do_message()
+
+    def test(self):
+        self.do_message()
+
+    def do_message(self):
+        Mbox = QtWidgets.QMessageBox(self)
+        Mbox.setText("DONE")
+        Mbox.resize(400, 300)
+        Mbox.move(700, 300)
+        Mbox.show()
+        Mbox.exec()
 
 
 class RBF_Window(QtWidgets.QDialog):
@@ -154,6 +251,7 @@ class RBF_Window(QtWidgets.QDialog):
         x.initial_values(rbf_inputs.mse, rbf_inputs.eta, rbf_inputs.epochs)
         x.train()
         print(x.weights)
+        self.do_message()
 
     def test(self):
         rbf_inputs = RBF_inputs()
@@ -169,6 +267,15 @@ class RBF_Window(QtWidgets.QDialog):
         x.train()
         a = x.test()
         print(a)
+        self.do_message()
+
+    def do_message(self):
+        Mbox = QtWidgets.QMessageBox(self)
+        Mbox.setText("DONE")
+        Mbox.resize(400, 300)
+        Mbox.move(700, 300)
+        Mbox.show()
+        Mbox.exec()
 
 
 class Classify_window(QtWidgets.QDialog):
@@ -237,10 +344,10 @@ class Classify_window(QtWidgets.QDialog):
         mean = pca.ImagesMean()
         pca.Training(mean)
         rbf_inputs = RBF_inputs()
-        rbf_inputs.k = 11
+        rbf_inputs.k = 13
         rbf_inputs.mse = .001
-        rbf_inputs.eta = .9
-        rbf_inputs.epochs = 16
+        rbf_inputs.eta = .5
+        rbf_inputs.epochs = 300
         file = open_workbook('ObjectRecognition2.xls')
         training_sheet = file.sheet_by_name("Training")
         testing_sheet = file.sheet_by_name("Testing")
