@@ -6,6 +6,14 @@ import xlwt
 import matplotlib.pyplot as plt
 import math
 
+
+def generante_features_sample(image,totalimages,finalEigenVectors):
+    mean = image - totalimages
+    FinalData = np.dot(np.array(finalEigenVectors).T, mean)
+    FinalData = FinalData.T
+    return FinalData
+
+
 class PCA:
     def __init__(self, NumberOfClasses):
         self.NumberOfClasses = NumberOfClasses
@@ -16,10 +24,10 @@ class PCA:
     def ReadImages(self, operation):
         self.Images = []
         for Class in range(0, self.NumberOfClasses, 1):
-            if(operation=="Training"):
-             path = operation + "/" + str(Class + 1) + "/*.jpg"
+            if (operation == "Training"):
+                path = operation + "/" + str(Class + 1) + "/*.jpg"
             else:
-             path = operation + "/" + str(Class + 1) + "/*.bmp"
+                path = operation + "/" + str(Class + 1) + "/*.bmp"
             for Image in glob.glob(path):
                 image = cv2.imread(Image)
                 image = cv2.resize(image, (50, 50))
@@ -101,6 +109,19 @@ class PCA:
                 sheet.write(i, j + 1, FinalData[i][j])
         self.wbk.save("ObjectRecognition.xls")
         FinalData = []
+        file = open("DataPCA.txt", "w")
+        for i in self.totalimages:
+            a = str(i)
+            file.write(a)
+            file.write(" ")
+        file.write("\n")
+        for i in self.finalEigenVectors:
+            for j in i:
+                a = str(j)
+                file.write(a)
+                file.write(" ")
+            file.write("\n")
+        file.close()
         return FinalData
 
     def getPCs(self, ediagonal, orderedVectors):
@@ -111,14 +132,14 @@ class PCA:
         out = [[] for j in range(0, len(orderedVectors), 1)]
         j = 0
         y = []
-        x=[i+1 for i in range(len(CumProb))]
+        x = [i + 1 for i in range(len(CumProb))]
         while (j < len(CumProb)):
             if (CumProb[j] > 0.97):
                 break
             for i in range(0, len(orderedVectors), 1):
                 out[i].append(orderedVectors[i][j])
             j = j + 1
-        plt.plot(x,CumProb)
+        plt.plot(x, CumProb)
         plt.xlabel("PCs")
         plt.ylabel("CumProb")
         plt.show()
@@ -143,9 +164,10 @@ class PCA:
         FinalData = FinalData.T
         return FinalData
 
-    def SetData(self,EigenVectors,ImagesMean):
-        self.finalEigenVectors=EigenVectors.copy()
-        self.totalimages=ImagesMean.copy()
+    def SetData(self, EigenVectors, ImagesMean):
+        self.finalEigenVectors = EigenVectors.copy()
+        self.totalimages = ImagesMean.copy()
+
 
 class Node:
     def __init__(self, input):
@@ -157,54 +179,60 @@ class GeneralHebbianAlgorithm:
     def __init__(self):
         self.OldWeight = [[random.random() for i in range(2500)] for j in range(20)]
         self.weights = [[0 for i in range(2500)] for j in range(20)]
-        self.weightperepoch=[[0 for i in range(2500)] for j in range(20)]
+        self.weightperepoch = [[0 for i in range(2500)] for j in range(20)]
+
     def calculate(self, i, j, PCs):
         sum = 0.0
         for k in range(i + 1):
             sum = sum + self.OldWeight[k][j] * PCs[k]
-           # print(sum)
-       # print("--------------")
+        # print(sum)
+        # print("--------------")
         return sum
+
     def Stopping(self):
         for i in range(len(self.OldWeight)):
             for j in range(len(self.OldWeight[0])):
-                if ((self.weightperepoch[i][j]-self.weights[i][j])!=0):
+                if ((self.weightperepoch[i][j] - self.weights[i][j]) != 0):
                     return False
         return True
-    def Normalize(self,weights):
+
+    def Normalize(self, weights):
         for i in range(len(weights)):
-            avg=0
-            mx=0
-            mn=1e9
+            avg = 0
+            mx = 0
+            mn = 1e9
             for j in range(len(weights[0])):
-                avg=avg+weights[i][j]
-                if(weights[i][j]>mx):
-                    mx=weights[i][j]
-                if(weights[i][j]<mn):
-                    mn=weights[i][j]
-            avg=avg/len(weights[0])
+                avg = avg + weights[i][j]
+                if (weights[i][j] > mx):
+                    mx = weights[i][j]
+                if (weights[i][j] < mn):
+                    mn = weights[i][j]
+            avg = avg / len(weights[0])
             for j in range(len(weights[0])):
-                weights[i][j]=(weights[i][j]-avg)/(mx-mn)
+                weights[i][j] = (weights[i][j] - avg) / (mx - mn)
         return weights
+
     def Network(self, network, learningrate):
-        self.OldWeight=self.Normalize(self.OldWeight)
+        self.OldWeight = self.Normalize(self.OldWeight)
         epoch = 100
         while (epoch > 0):
             print(epoch)
             for n in range(0, len(network), 1):
                 for i in range(0, len(network[0].output), 1):
-                    network[n].output[i]=0
+                    network[n].output[i] = 0
                     for j in range(0, len(network[0].input), 1):
-                        network[n].output[i] =( network[n].output[i] +  self.OldWeight[i][j] * network[n].input[j]) #%255 # calc output
-                    for j in range(0,len(network[0].input),1):
-                        self.weights[i][j]=network[n].output[i] * network[n].input[j]-network[n].output[i]*self.weights[i][j]
-                        if(i!=0):
-                         self.weights[i][j]=self.weights[i][j]-(network[n].output[i] * self.weights[i-1][j])
-                        self.weights[i][j]=self.weights[i][j]*learningrate
-                self.OldWeight=self.Normalize(self.weights).copy()
-            if(self.Stopping()):
-               break
-            self.weightperepoch=self.weights.copy()
-            #print(self.weightperepoch)
-            epoch = epoch -1
+                        network[n].output[i] = (network[n].output[i] + self.OldWeight[i][j] * network[n].input[
+                            j])  # %255 # calc output
+                    for j in range(0, len(network[0].input), 1):
+                        self.weights[i][j] = network[n].output[i] * network[n].input[j] - network[n].output[i] * \
+                                             self.weights[i][j]
+                        if (i != 0):
+                            self.weights[i][j] = self.weights[i][j] - (network[n].output[i] * self.weights[i - 1][j])
+                        self.weights[i][j] = self.weights[i][j] * learningrate
+                self.OldWeight = self.Normalize(self.weights).copy()
+            if (self.Stopping()):
+                break
+            self.weightperepoch = self.weights.copy()
+            # print(self.weightperepoch)
+            epoch = epoch - 1
         return self.OldWeight

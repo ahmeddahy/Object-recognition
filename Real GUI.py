@@ -35,13 +35,21 @@ def start_window():
     RBF_button.resize(400, 100)
     RBF_button.move(50, 240)
     window.show()
-    generate_features_button.clicked.connect(PCA_Window)
+    generate_features_button.clicked.connect(Do_graph)
     MLP_button.clicked.connect(MLP_Window)
     RBF_button.clicked.connect(RBF_Window)
     app.exec()
 
+def Do_graph():
+    pca = PCA(5)
+    pca.ReadImages('Training')
+    mean = pca.ImagesMean()
+    pca.Training(mean)
+    pca.ReadImages('Testing')
+    pca.Testing()
 
-class PCA_Window(QtWidgets.QDialog):
+
+'''class PCA_Window(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
         self.title = 'Generate Features'
@@ -65,15 +73,7 @@ class PCA_Window(QtWidgets.QDialog):
         GHA_Button.resize(200, 100)
         GHA_Button.move(50, 130)
         self.show()
-        self.exec()
-
-    def Do_graph(self):
-        pca = PCA(5)
-        pca.ReadImages('Training')
-        mean = pca.ImagesMean()
-        pca.Training(mean)
-        pca.ReadImages('Testing')
-        pca.Testing()
+        self.exec()'''
 
 
 class MLP_Window(QtWidgets.QDialog):
@@ -105,7 +105,7 @@ class MLP_Window(QtWidgets.QDialog):
         self.exec()
 
     def test(self):
-        multi=MLP()
+        multi = MLP()
         multi.read_excel('ObjectRecognition2.xls')
         multi.read_xml("MLP.xml")
         acc, conf = multi.test()
@@ -293,10 +293,6 @@ class Classify_window_rbf(QtWidgets.QDialog):
             self.label2.move(310, 20)
 
     def Recognize(self):
-        pca = PCA(5)
-        pca.ReadImages('Training')
-        mean = pca.ImagesMean()
-        pca.Training(mean)
         original_image = cv2.imread(self.original_path)
         output_image = cv2.imread(self.original_path)
         getimages = Segmentation()
@@ -308,7 +304,7 @@ class Classify_window_rbf(QtWidgets.QDialog):
             image = cv2.resize(crop_img, (50, 50))
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             gray = np.reshape(gray, 2500)
-            feautures = pca.TestingOne(gray)
+            feautures = generante_features_sample(gray, pca_data.totalimages, pca_data.finalEigenVectors)
             type = classify_from_file(feautures, r.k, r.num_classes, r.avg_list, r.mx_list, r.mn_list, r.centers,
                                       r.weights)
             output_image = add_rectangle(output_image, coordinate.x, coordinate.y, coordinate.x + coordinate.w,
@@ -378,10 +374,6 @@ class Classify_window_mlp(QtWidgets.QDialog):
             self.label2.move(310, 20)
 
     def Recognize(self):
-        pca = PCA(5)
-        pca.ReadImages('Training')
-        mean = pca.ImagesMean()
-        pca.Training(mean)
         multi = MLP()
         multi.read_xml("MLP.xml")
         original_image = cv2.imread(self.original_path)
@@ -394,7 +386,7 @@ class Classify_window_mlp(QtWidgets.QDialog):
             image = cv2.resize(crop_img, (50, 50))
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             gray = np.reshape(gray, 2500)
-            feautures = pca.TestingOne(gray)
+            feautures = generante_features_sample(gray, pca_data.totalimages, pca_data.finalEigenVectors)
             type = multi.determine_class(np.asarray(feautures)) - 1
             output_image = add_rectangle(output_image, coordinate.x, coordinate.y, coordinate.x + coordinate.w,
                                          coordinate.y + coordinate.h, type)
@@ -423,9 +415,6 @@ class read_rbf_data():
                 tmp += text[i]
             if (text[i] == '\n'):
                 if j >= 3 and j <= 15:
-                    print(j)
-                    print(center)
-                    print(len(center))
                     self.centers.append(center)
                     center = []
                 if j >= 16 and j <= 20:
@@ -456,6 +445,35 @@ class read_rbf_data():
             i += 1
 
 
+class read_pca_data():
+    def __init__(self):
+        self.totalimages = []
+        self.finalEigenVectors = []
+        Vector = []
+        file = open("DataPCA.txt", "r")
+        text = file.read()
+        i = 0
+        j = 0
+        tmp = ""
+        while (i < len(text)):
+            if text[i] != ' ' and text[i] != '\n':
+                tmp += text[i]
+            if (text[i] == '\n'):
+                if j >= 1:
+                    self.finalEigenVectors.append(Vector)
+                    Vector = []
+                j += 1
+            elif j == 0 and text[i] == ' ':
+                if tmp != ' ':
+                    self.totalimages.append(float(tmp))
+                tmp = ""
+            elif j >= 1 and text[i] == ' ':
+                if tmp != ' ':
+                    Vector.append(float(tmp))
+                tmp = ""
+            i += 1
+
+
 def type(k):
     if k == 0:
         return 'Cat'
@@ -479,4 +497,5 @@ def add_rectangle(img, minx, miny, maxx, maxy, k):
     return a
 
 
+pca_data = read_pca_data()
 start_window()
